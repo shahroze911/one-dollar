@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply text-slate-900 antialiased;
+    background: radial-gradient(1100px 480px at 100% -8%, #d1fae5 0%, transparent 60%), #f8fafc;
+    background-attachment: fixed;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition duration-150 active:scale-[.97] disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-600/25 hover:from-emerald-600 hover:to-teal-700 hover:shadow-lg hover:shadow-emerald-600/30;
+  }
+  .btn-ghost {
+    @apply border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50;
+  }
+  .btn-danger {
+    @apply bg-rose-600 text-white hover:bg-rose-700;
+  }
+  .input {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100;
+  }
+  .card {
+    @apply rounded-2xl border border-slate-200/80 bg-white shadow-sm;
+  }
+  .label {
+    @apply mb-1 block text-xs font-medium text-slate-600;
+  }
+  .skeleton {
+    @apply animate-pulse rounded-xl bg-slate-200/70;
+  }
+}
+
+/* ------------------------------ animations ------------------------------ */
+@keyframes pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+.pop { animation: pop 0.18s ease-out; }
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+.slide-up { animation: slideUp 0.35s ease-out both; }
+
+@keyframes bump {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+.bump { display: inline-block; animation: bump 0.28s ease-out; }
+
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.check-circle { stroke-dasharray: 152; stroke-dashoffset: 152; animation: draw 0.5s ease forwards; }
+.check-path   { stroke-dasharray: 40;  stroke-dashoffset: 40;  animation: draw 0.4s 0.35s ease forwards; }
+
+@keyframes floaty {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  50%      { transform: translateY(-14px) translateX(6px); }
+}
+.floaty { animation: floaty 7s ease-in-out infinite; }
+.float  { animation: floaty 5s ease-in-out infinite; }
+
+@keyframes growUp { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.grow-up { transform-origin: bottom; animation: growUp 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* ------------------------------- receipt -------------------------------- */
+/* Same markup is used for the on-screen preview and for the thermal printout. */
+#receipt-root { display: none; }
+
+.receipt {
+  font-family: "Courier New", ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #000;
+  background: #fff;
+  padding: 3mm 3mm 6mm;
+  margin: 0 auto;
+}
+.receipt.w80 { width: 76mm; }
+.receipt.w58 { width: 54mm; font-size: 11px; }
+.receipt .r-c { text-align: center; }
+.receipt .r-b { font-weight: 700; }
+.receipt .r-title { font-size: 17px; font-weight: 800; letter-spacing: 0.02em; }
+.receipt .r-row { display: flex; justify-content: space-between; gap: 8px; }
+.receipt .r-dash { border-top: 1px dashed #000; margin: 6px 0; height: 0; }
+.receipt .r-item { margin-bottom: 4px; }
+.receipt .r-total { font-size: 15px; font-weight: 800; margin: 3px 0; }
+.receipt .r-mt { margin-top: 6px; }
+.receipt .r-feed { height: 8mm; }
+
+@media print {
+  @page { margin: 0; }
+  html, body { background: #fff !important; }
+  body > *:not(#receipt-root) { display: none !important; }
+  #receipt-root { display: block !important; }
+  #receipt-root .receipt { width: 100% !important; margin: 0; }
+}
