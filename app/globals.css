@@ -6,7 +6,12 @@
   html {
     -webkit-tap-highlight-color: transparent;
   }
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
   body {
+    overflow-x: clip; /* nothing may ever make the page scroll sideways */
     @apply text-slate-900 antialiased;
     background: radial-gradient(1100px 480px at 100% -8%, #d1fae5 0%, transparent 60%), #f8fafc;
     background-attachment: fixed;
@@ -28,7 +33,7 @@
     @apply bg-rose-600 text-white hover:bg-rose-700;
   }
   .input {
-    @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100;
+    @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base outline-none sm:text-sm transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100;
   }
   .card {
     @apply rounded-2xl border border-slate-200/80 bg-white shadow-sm;
@@ -91,6 +96,8 @@
 .receipt.w80 { width: 76mm; }
 .receipt.w58 { width: 54mm; font-size: 11px; }
 .receipt .r-c { text-align: center; }
+.receipt .r-big { font-size: 14px; margin: 4px 0; }
+.receipt .r-logo { display: block; margin: 0 auto 4px; width: 36mm; max-width: 100%; height: auto; image-rendering: pixelated; }
 .receipt .r-b { font-weight: 700; }
 .receipt .r-title { font-size: 17px; font-weight: 800; letter-spacing: 0.02em; }
 .receipt .r-row { display: flex; justify-content: space-between; gap: 8px; }
@@ -102,6 +109,17 @@
 
 @media print {
   @page { margin: 0; }
+  /* Reports: print the page itself (menus and buttons hidden) instead of a receipt */
+  html.print-report body > *:not(#receipt-root):not(script):not(style):not(link):not(noscript):not(next-route-announcer) { display: block !important; }
+  html.print-report .no-print,
+  html.print-report aside,
+  html.print-report header,
+  html.print-report nav { display: none !important; }
+  html.print-report main { margin: 0 !important; padding: 12mm !important; }
+  html.print-report body { background: #fff !important; }
+  html.print-report .card { box-shadow: none !important; break-inside: avoid; }
+  html.print-report #report .bg-gradient-to-br { color: #000 !important; background: #fff !important; border: 1px solid #999; }
+  html.print-report #report .bg-gradient-to-br * { color: #000 !important; }
   html, body { background: #fff !important; }
   body > *:not(#receipt-root) { display: none !important; }
   #receipt-root { display: block !important; }

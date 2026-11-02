@@ -156,6 +156,7 @@ export default function StockPage() {
             ) : rows.length === 0 ? (
               <div className="py-16 text-center text-sm text-slate-500">Nothing here{filter !== "all" ? ". Nice, no problems!" : "."}</div>
             ) : (
+              <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
@@ -187,6 +188,7 @@ export default function StockPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </>

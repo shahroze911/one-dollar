@@ -11,6 +11,7 @@ import { useToast } from "@/components/toast";
 type Stats = {
   today_total: number;
   yesterday_total: number;
+  today_refunds: number;
   today_count: number;
   today_items: number;
   today_profit: number;
@@ -83,7 +84,8 @@ export default function DashboardPage() {
   const y = Number(s.yesterday_total);
   const t = Number(s.today_total);
   const pct = y > 0 ? Math.round(((t - y) / y) * 100) : null;
-  const delta =
+  const refunds = Number(s.today_refunds ?? 0);
+  const delta0 =
     pct === null ? (
       <span className="text-white/80">vs yesterday: {money(y)}</span>
     ) : (
@@ -92,6 +94,12 @@ export default function DashboardPage() {
         {Math.abs(pct)}% vs yesterday
       </span>
     );
+  const delta = (
+    <span className="flex flex-col">
+      {delta0}
+      {refunds > 0 && <span className="text-white/90">− {money(refunds)} refunded today</span>}
+    </span>
+  );
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">

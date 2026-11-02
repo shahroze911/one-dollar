@@ -1,19 +1,13 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Boxes, LayoutDashboard, Lock, LogOut, Package, Receipt, ScanBarcode, Settings, ShieldCheck } from "lucide-react";
+import { useEffect } from "react";
+import { Lock, LogOut, Settings, ShieldCheck } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { useAdmin, useSettings } from "@/components/providers";
-
-const nav = [
-  { href: "/pos", label: "Checkout", icon: ScanBarcode, owner: false },
-  { href: "/products", label: "Products", icon: Package, owner: true },
-  { href: "/stock", label: "Stock", icon: Boxes, owner: true },
-  { href: "/sales", label: "Sales", icon: Receipt, owner: true },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, owner: true },
-  { href: "/settings", label: "Settings", icon: Settings, owner: true },
-];
-const mobileNav = nav.slice(0, 5);
+import { NAV } from "@/lib/nav";
+import { loadQueue } from "@/lib/offline";
+import OfflineBanner from "@/components/offline-banner";
 
 export default function AppShell({ email, children }: { email: string; children: React.ReactNode }) {
   const path = usePathname();
@@ -21,8 +15,35 @@ export default function AppShell({ email, children }: { email: string; children:
   const { unlocked, minutesLeft, lock } = useAdmin();
   const { settings } = useSettings();
 
+  // pages the owner hid in Settings (Settings itself can never be hidden)
+  const nav = NAV.filter((n) => !settings.hidden_pages.includes(n.href));
+  const mobileNav = nav.filter((n) => n.href !== "/settings"); // Settings lives in the top bar
+
+  // someone opened a hidden page (old bookmark, typed address): send them to the first visible one
+  useEffect(() => {
+    const hidden = NAV.some((n) => settings.hidden_pages.includes(n.href) && path.startsWith(n.href));
+    if (hidden) router.replace(nav[0]?.href ?? "/settings");
+  }, [path, settings.hidden_pages]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // remember who is signed in, so receipts made offline can still show the cashier
+  useEffect(() => {
+    try {
+      if (email) localStorage.setItem("posEmail", email);
+    } catch {
+      /* ignore */
+    }
+  }, [email]);
+
   const signOut = async () => {
+    const waiting = loadQueue().length;
+    if (waiting > 0 && !confirm(`${waiting} sale${waiting === 1 ? " is" : "s are"} still saved on this device and not sent yet. If you sign out now they stay here until someone signs in on this device with internet. Sign out anyway?`)) return;
     await lock();
+    try {
+      // saved pages belong to the signed-in user: forget them (the waiting sales are kept)
+      if ("caches" in window) (await caches.keys()).forEach((k) => caches.delete(k));
+    } catch {
+      /* ignore */
+    }
     await supabaseBrowser().auth.signOut();
     router.replace("/login");
     router.refresh();
@@ -30,13 +51,13 @@ export default function AppShell({ email, children }: { email: string; children:
 
   const lockNow = async () => {
     await lock();
-    if (nav.some((n) => n.owner && path.startsWith(n.href))) router.replace("/pos");
+    if (NAV.some((n) => n.owner && path.startsWith(n.href))) router.replace(nav.find((n) => !n.owner)?.href ?? "/pos");
   };
 
   return (
     <div className="min-h-screen">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-gradient-to-b from-slate-900 via-slate-900 to-emerald-950 p-4 text-slate-200 lg:flex">
+      <aside className="no-print fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-gradient-to-b from-slate-900 via-slate-900 to-emerald-950 p-4 text-slate-200 lg:flex">
         <div className="mb-7 flex items-center gap-3 px-2">
           <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 text-sm font-extrabold text-white shadow-lg shadow-emerald-500/30">Rs</div>
           <div className="min-w-0 leading-tight">
@@ -86,7 +107,7 @@ export default function AppShell({ email, children }: { email: string; children:
       </aside>
 
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-30 flex items-center justify-between bg-gradient-to-r from-slate-900 to-emerald-900 px-4 py-2.5 text-white lg:hidden">
+      <header className="no-print sticky top-0 z-30 flex items-center justify-between bg-gradient-to-r from-slate-900 to-emerald-900 px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] text-white lg:hidden">
         <div className="flex min-w-0 items-center gap-2">
           <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 text-xs font-extrabold">Rs</div>
           <span className="truncate font-extrabold">{settings.shop_name}</span>
@@ -110,15 +131,17 @@ export default function AppShell({ email, children }: { email: string; children:
         </div>
       </header>
 
-      <main className="px-4 pb-28 pt-4 lg:ml-64 lg:px-8 lg:pb-8 lg:pt-6">{children}</main>
+      <OfflineBanner />
+
+      <main className="px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-4 lg:ml-64 lg:px-8 lg:pb-8 lg:pt-6">{children}</main>
 
       {/* Mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-slate-200 bg-white/95 backdrop-blur lg:hidden">
+      <nav className="no-print fixed inset-x-0 bottom-0 z-30 flex overflow-x-auto border-t pb-[env(safe-area-inset-bottom)] border-slate-200 bg-white/95 backdrop-blur lg:hidden">
         {mobileNav.map(({ href, label, icon: Icon, owner }) => {
           const active = path.startsWith(href);
           return (
-            <Link key={href} href={href} className={`relative flex flex-col items-center gap-0.5 py-2 text-[11px] font-semibold transition ${active ? "text-emerald-600" : "text-slate-500"}`}>
-              {active && <span className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-emerald-500" />}
+            <Link key={href} href={href} className={`relative flex min-w-[4.5rem] flex-1 shrink-0 flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition ${active ? "text-emerald-600" : "text-slate-500"}`}>
+              {active && <span className="absolute inset-x-4 top-0 h-0.5 rounded-full bg-emerald-500" />}
               <Icon size={20} />
               {label}
               {owner && !unlocked && <Lock size={9} className="absolute right-3 top-1.5 opacity-40" />}
